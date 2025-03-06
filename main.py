@@ -16,10 +16,10 @@ def chat(prompt):
     input_text = f"User: {prompt}\nAI Tutor:"
     response = chatbot(
         input_text, 
-        max_length=150,  # Shorter responses
-        temperature=0.7,  # Lower randomness
-        top_p=0.9,  # Reduce likelihood of irrelevant responses
-        top_k=50,  # Sample from top 50 likely words
+        max_length=150, 
+        temperature=0.7,  
+        top_p=0.9,  
+        top_k=50,  
         truncation=True, 
         pad_token_id=tokenizer.eos_token_id
     )
