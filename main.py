@@ -25,7 +25,7 @@ def chat(prompt):
     )
     return response[0]['generated_text']
 
-
+# test
 
 # Test the chatbot
 print(chat("Hello! How can I improve my problem-solving skills?"))
