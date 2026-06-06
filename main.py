@@ -65,6 +65,117 @@ def now_timestamp():
     return datetime.now().isoformat(timespec="seconds")
 
 
+
+# -----------------------------
+# User Profile memory
+# -----------------------------
+
+VALID_PROFILE_FIELDS = {
+    "active_projects",
+    "long_term_goals",
+    "preferences",
+    "learning_style",
+    "assistant_rules",
+    "current_focus"
+}
+
+def load_user_profile():
+    return load_json(USER_PROFILE_FILE, {
+        "name": "Jarell",
+        "preferred_name": "Max",
+        "active_projects": [],
+        "long_term_goals": [],
+        "preferences": [],
+        "learning_style": [],
+        "assistant_rules": [],
+        "current_focus": [],
+        "last_updated": None
+    })
+
+def save_user_profile(profile):
+    profile["last_updated"] = now_timestamp()
+    save_json(USER_PROFILE_FILE, profile)
+
+def remember_profile_fact(field: str, fact: str):
+    field = field.strip().casefold().replace("-", "_")
+    fact = fact.strip()
+
+    if field not in VALID_PROFILE_FIELDS:
+        print("\nAMPPA: Unknown profile field.")
+        print("Valid fields are:")
+        for valid_field in sorted(VALID_PROFILE_FIELDS):
+            print(f"- {valid_field}")
+        return
+    
+    if not fact:
+        print("\nAMPPA: Use this format: /profile-add field | fact")
+        return
+
+    profile = load_user_profile()
+
+    if field not in profile or not isinstance(profile[field], list):
+        profile[field] = []
+
+    if fact not in profile[field]:
+        profile[field].append(fact)
+
+    save_user_profile(profile)
+
+    print(f"\nAMPPA: Remembered profile fact in '{field}'.")
+
+def show_user_profile():
+    profile = load_user_profile()
+
+    print("\n--- User Profile ---")
+    print(f"Name: {profile.get('name', 'Unknown')}")
+    print(f"Preferred name: {profile.get('preferred_name', 'Unknown')}")
+    print(f"Last updated: {profile.get('last_updated', 'Unknown')}")
+
+    for field in [
+        "active_projects",
+        "long_term_goals",
+        "preferences",
+        "learning_style",
+        "assistant_rules",
+        "current_focus"
+    ]:
+        values = profile.get(field, [])
+
+        print(f"\n{field.replace('_', ' ').title()}:")
+        if values:
+            for item in values:
+                print(f"- {item}")
+        else:
+            print("- None")
+    
+    print("\n--- End Profile ---")
+    
+
+def build_user_profile_context():
+    profile = load_user_profile()
+
+    lines = [
+        f"Name: {profile.get('name', 'Unknown')}",
+        f"Preferred name: {profile.get('preferred_name', 'Unknown')}"
+    ]
+
+    for field in [
+        "active_projects",
+        "long_term_goals",
+        "preferences",
+        "learning_style",
+        "assistant_rules",
+        "current_focus"
+    ]:
+        values = profile.get(field, [])
+        if values:
+            lines.append(f"\n{field.replace('_', ' ').title()}:")
+            for item in values:
+                lines.append(f"- {item}")
+
+    return "\n".join(lines)
+
+
 # -----------------------------
 # Setup memory files
 # -----------------------------
@@ -76,9 +187,14 @@ def ensure_memory_files():
     ensure_json_file(CONVERSATION_FILE, [])
     ensure_json_file(USER_PROFILE_FILE, {
         "name": "Jarell",
-        "goals": [],
+        "preferred_name": "Max",
+        "active_projects": [],
+        "long_term_goals": [],
         "preferences": [],
-        "projects": []
+        "learning_style": [],
+        "assistant_rules": [],
+        "current_focus": [],
+        "last_updated": None
     })
 
     ensure_json_file(PEOPLE_FILE, {})
@@ -189,20 +305,26 @@ def remember_entity(entity_type: str, name: str, fact: str):
 
     entities = load_entities(entity_type)
 
-    if name not in entities:
-        entities[name] = {
+    existing_key = find_entity_key(entities, name)
+
+    if existing_key:
+        entity_key = existing_key
+    else:
+        entity_key = name
+        entities[entity_key]= {
             "type": entity_type,
+            "display_name": name,
             "known_facts": [],
             "created_at": now_timestamp(),
             "last_mentioned": now_timestamp(),
             "mention_count": 0
         }
 
-    if fact not in entities[name]["known_facts"]:
-        entities[name]["known_facts"].append(fact)
+    if fact not in entities[entity_key]["known_facts"]:
+        entities[entity_key]["known_facts"].append(fact)
 
-    entities[name]["last_mentioned"] = now_timestamp()
-    entities[name]["mention_count"] = entities[name].get("mention_count", 0) + 1
+    entities[entity_key]["last_mentioned"] = now_timestamp()
+    entities[entity_key]["mention_count"] = entities[entity_key].get("mention_count", 0) + 1
 
     save_entities(entity_type, entities)
 
@@ -213,11 +335,13 @@ def get_entity(entity_type: str, name: str):
     name = normalize_entity_name(name)
     entities = load_entities(entity_type)
 
-    if name not in entities:
+    entity_key = find_entity_key(entities, name)
+
+    if not entity_key:
         print(f"\nAMPPA: I do not have memory for {entity_type} '{name}' yet.")
         return
 
-    entity = entities[name]
+    entity = entities[entity_key]
 
     print(f"\n--- {entity_type.title()}: {name} ---")
     print(f"Created: {entity.get('created_at', 'Unknown')}")
@@ -234,6 +358,16 @@ def get_entity(entity_type: str, name: str):
         print("\nNo known facts saved yet.")
 
     print("--- End Entity ---")
+
+# entity key for normalization and lookup, but we can display the original name with proper capitalization when listing or showing details.
+
+def find_entity_key(entities, name: str):
+    search_name = name.strip().casefold()
+
+    for existing_name in entities:
+        if existing_name.casefold() == search_name:
+            return existing_name
+    return None
 
 
 def list_entities():
@@ -362,6 +496,21 @@ def handle_command(user_message: str) -> bool:
     if lower_message == "/help":
         show_help()
         return True
+    
+    if lower_message == "/profile":
+        show_user_profile()
+        return True
+    
+    if lower_message.startswith("/profile-add "):
+        content = user_message[len("/profile-add "):].strip()
+
+        if "|" not in content:
+            print("\nAMPPA: Use this format: /profile-add field | fact")
+            return True
+
+        field, fact = content.split("|", 1)
+        remember_profile_fact(field.strip(), fact.strip())
+        return True
 
     return False
 
@@ -378,6 +527,9 @@ Entity memory:
 /remember-person Name | fact
 /remember-project Name | fact
 /remember-concept Name | fact
+          
+/profile
+/profile-add field | fact
 
 View entity memory:
 /person Name
@@ -401,6 +553,7 @@ quit
 def ask_amppa(user_message):
     recent_conversation_context = build_recent_conversation_context()
     entity_context = build_entity_context()
+    user_profile_context = build_user_profile_context()
 
     response = client.chat.completions.create(
         model="local-model",
@@ -423,6 +576,10 @@ def ask_amppa(user_message):
             {
                 "role": "system",
                 "content": f"Structured entity memory:\n{entity_context}"
+            },
+            {
+                "role": "system",
+                "content": f"User profile:\n{user_profile_context}"
             },
             {
                 "role": "user",
