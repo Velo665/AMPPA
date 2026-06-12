@@ -1,69 +1,36 @@
-import json
-from pathlib import Path
-from datetime import datetime
 from openai import OpenAI
+from pathlib import Path
 
+# configuration and constants
+from config import (
+    MEMORY_DIR,
+    ENTITIES_DIR,
+    CONVERSATION_FILE,
+    USER_PROFILE_FILE,
+    PEOPLE_FILE,
+    PROJECTS_FILE,
+    CONCEPTS_FILE,
+    MAX_MEMORY_MESSAGES,
+    LM_STUDIO_BASE_URL,
+    LM_STUDIO_API_KEY,
+    LM_STUDIO_MODEL,
+)
 
-# -----------------------------
-# File paths
-# -----------------------------
-
-MEMORY_DIR = Path("memory")
-ENTITIES_DIR = MEMORY_DIR / "entities"
-
-CONVERSATION_FILE = MEMORY_DIR / "conversation.json"
-USER_PROFILE_FILE = MEMORY_DIR / "user_profile.json"
-
-PEOPLE_FILE = ENTITIES_DIR / "people.json"
-PROJECTS_FILE = ENTITIES_DIR / "projects.json"
-CONCEPTS_FILE = ENTITIES_DIR / "concepts.json"
-
-MAX_MEMORY_MESSAGES = 10
-
+from app_memory.json_store import (
+    ensure_json_file,
+    load_json,
+    save_json,
+    now_timestamp,
+)
 
 # -----------------------------
 # LM Studio client
 # -----------------------------
 
 client = OpenAI(
-    base_url="http://localhost:1234/v1",
-    api_key="lm-studio"
+    base_url=LM_STUDIO_BASE_URL,
+    api_key=LM_STUDIO_API_KEY
 )
-
-
-# -----------------------------
-# Generic JSON helpers
-# -----------------------------
-
-def ensure_json_file(path: Path, default_data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    if not path.exists():
-        save_json(path, default_data)
-
-
-def load_json(path: Path, default_data):
-    ensure_json_file(path, default_data)
-
-    try:
-        with path.open("r", encoding="utf-8") as file:
-            return json.load(file)
-    except json.JSONDecodeError:
-        print(f"Warning: {path} was corrupted. Resetting to default.")
-        save_json(path, default_data)
-        return default_data
-
-
-def save_json(path: Path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    with path.open("w", encoding="utf-8") as file:
-        json.dump(data, file, indent=2, ensure_ascii=False)
-
-
-def now_timestamp():
-    return datetime.now().isoformat(timespec="seconds")
-
 
 
 # -----------------------------
@@ -556,7 +523,7 @@ def ask_amppa(user_message):
     user_profile_context = build_user_profile_context()
 
     response = client.chat.completions.create(
-        model="local-model",
+        model=LM_STUDIO_MODEL,
         messages=[
             {
                 "role": "system",
