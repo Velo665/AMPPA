@@ -28,3 +28,21 @@ def ask_amppa(user_message):
     add_to_conversation_memory(user_message, amppa_response)
 
     return amppa_response
+
+def check_lm_studio_status():
+    try:
+        models = client.models.list()
+
+        if not models.data:
+            print("AMPPA warning: LM Studio is reachable, but no model is loaded.")
+            print("Load a model in LM Studio before chatting.")
+            return False
+
+        print(f"LM Studio model loaded: {models.data[0].id}")
+        return True
+
+    except Exception as error:
+        print("AMPPA warning: Could not reach LM Studio.")
+        print("Make sure the LM Studio local server is running.")
+        print(f"Details: {error}")
+        return False

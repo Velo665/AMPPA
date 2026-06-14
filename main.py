@@ -1,14 +1,16 @@
 from app_memory.setup import ensure_memory_files
 from commands import handle_command
-from llm_client import ask_amppa
+from llm_client import ask_amppa, check_lm_studio_status
 
 
 def main():
     ensure_memory_files()
-
-    print("AMPPA is connected to LM Studio locally.")
+    
     print("Local memory is enabled.")
     print("Structured entity memory is enabled.")
+
+    check_lm_studio_status()
+
     print("Type 'exit' to quit.")
     print("Type '/help' to see commands.")
 

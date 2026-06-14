@@ -1,3 +1,7 @@
+# -----------------------------
+# Setup memory files
+# -----------------------------
+
 from config import (
     MEMORY_DIR,
     ENTITIES_DIR,
@@ -12,10 +16,6 @@ from app_memory.json_store import (
     ensure_json_file,
 )
 
-
-# -----------------------------
-# Setup memory files
-# -----------------------------
 
 def ensure_memory_files():
     MEMORY_DIR.mkdir(exist_ok=True)

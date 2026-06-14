@@ -1,3 +1,7 @@
+# -----------------------------
+# User Profile memory
+# -----------------------------
+
 from config import (
     USER_PROFILE_FILE,
 )
@@ -6,10 +10,6 @@ from app_memory.json_store import (
     save_json,
     now_timestamp,
 )
-
-# -----------------------------
-# User Profile memory
-# -----------------------------
 
 VALID_PROFILE_FIELDS = {
     "active_projects",

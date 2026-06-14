@@ -1,3 +1,7 @@
+# -----------------------------
+# Entity memory helpers
+# -----------------------------
+
 from pathlib import Path
 
 from app_memory.json_store import (
@@ -11,10 +15,6 @@ from config import (
     PROJECTS_FILE,
     CONCEPTS_FILE,
 )
-
-# -----------------------------
-# Entity memory helpers
-# -----------------------------
 
 def get_entity_file(entity_type: str) -> Path:
     entity_type = entity_type.lower()
